@@ -5,57 +5,141 @@ import javax.swing.DefaultListCellRenderer;
 import java.awt.*;
 
 /**
- * GUI-based application (required by brief).
+ * ShopGUI - A graphical user interface (GUI) application for the accessories
+ * shop stock management system.
  *
- * Features:
- * - Create multiple StockItem objects (including all subclasses)
- * - Add stock, sell stock, change price
- * - Display updated item details after every operation
- * - All error messages are shown in the GUI output panel (not just System.out)
+ * <p>This class extends {@link JFrame} and serves as the main entry point for
+ * the GUI-based application required by the project brief. It allows shop staff
+ * to manage stock items interactively without writing any code, demonstrating
+ * all core object-oriented operations through a visual interface.</p>
  *
- * Fixes applied vs. original:
- * 1. doSell() now returns early on failure so "Updated item" is never shown after a failed sell.
- * 2. doAdd() now catches StockItem validation conditions and logs errors to the GUI panel.
- * 3. doSell() now catches StockItem validation conditions and logs errors to the GUI panel.
- * 4. doPrice() no longer uses floating-point == comparison (removed unreliable sanity check).
- * 5. Duplicate stock code detection added.
- * 6. Extra fields validated (non-empty) for types that require them (Tyre, OilFilter).
- * 7. amountField and newPriceField are cleared after successful operations.
- * 8. Empty stock list shows a placeholder message to guide the user.
+ * <h2>Features:</h2>
+ * <ul>
+ *   <li>Create multiple {@link StockItem} objects of any subclass type
+ *       ({@link NavSys}, {@link Tyre}, {@link CarBattery}, {@link OilFilter})</li>
+ *   <li>Add stock units to any selected item</li>
+ *   <li>Sell stock units from any selected item</li>
+ *   <li>Change the price (excluding VAT) of any selected item</li>
+ *   <li>Display updated item details after every operation</li>
+ *   <li>All validation error messages are surfaced in the GUI output panel,
+ *       not silently swallowed or only printed to {@code System.out}</li>
+ * </ul>
+ *
+ * <h2>Design decisions and fixes applied:</h2>
+ * <ol>
+ *   <li>{@link #doSell()} returns early on failure so the "Updated item" message
+ *       is never shown after an unsuccessful sell operation.</li>
+ *   <li>{@link #doAdd()} mirrors {@link StockItem} validation so errors appear
+ *       in the GUI output panel rather than only on the console.</li>
+ *   <li>{@link #doSell()} mirrors {@link StockItem} validation for the same reason.</li>
+ *   <li>{@link #doPrice()} does not use floating-point {@code ==} comparison,
+ *       avoiding an unreliable sanity check.</li>
+ *   <li>Duplicate stock code detection prevents the same code being registered twice.</li>
+ *   <li>Extra fields are validated as non-empty for types that require them
+ *       ({@link Tyre}, {@link OilFilter}, {@link CarBattery}).</li>
+ *   <li>{@code amountField} and {@code newPriceField} are cleared after each
+ *       successful operation to prevent accidental re-use.</li>
+ *   <li>An empty stock list displays a placeholder message to guide the user.</li>
+ * </ol>
+ *
+ * @author  Nadira Robleh
+ * @version 1.0
+ * @see     StockItem
+ * @see     NavSys
+ * @see     Tyre
+ * @see     CarBattery
+ * @see     OilFilter
  */
 public class ShopGUI extends JFrame {
 
+    // -----------------------------------------------------------------------
+    // GUI Component Fields
+    // -----------------------------------------------------------------------
+
+    /** The data model backing the stock list; holds all created {@link StockItem} instances. */
     private final DefaultListModel<StockItem> model = new DefaultListModel<>();
+
+    /** The visual list component that displays all stock items. */
     private final JList<StockItem> list = new JList<>(model);
+
+    /**
+     * The scrollable text area where operation results, item details,
+     * and error messages are displayed to the user.
+     */
     private final JTextArea output = new JTextArea(14, 45);
 
-    // Create item controls
+    // --- Create item controls -----------------------------------------------
+
+    /**
+     * Drop-down box allowing the user to select which type of stock item
+     * to create. Options correspond to all defined subclasses of {@link StockItem}.
+     */
     private final JComboBox<String> typeBox = new JComboBox<>(new String[]{
             "StockItem", "NavSys", "Tyre", "CarBattery", "OilFilter"
     });
 
+    /** Text field for entering the unique stock code of a new item (e.g. {@code "NS101"}). */
     private final JTextField codeField  = new JTextField(10);
+
+    /** Text field for entering the initial quantity in stock for a new item. */
     private final JTextField qtyField   = new JTextField(5);
+
+    /** Text field for entering the price per unit excluding VAT for a new item. */
     private final JTextField priceField = new JTextField(7);
 
-    // Extra fields for subclasses
+    /**
+     * First extra input field, used for subclass-specific attributes:
+     * tyre size, battery voltage, or oil filter type, depending on the
+     * item type selected in {@link #typeBox}.
+     */
     private final JTextField extra1Field = new JTextField(12);
-    private final JTextField extra2Field = new JTextField(12);
-
-    // Operation controls
-    private final JTextField amountField   = new JTextField(5);
-    private final JTextField newPriceField = new JTextField(7);
-
-    // Guard flag to prevent double-logging when model.set() fires the selection listener
-    private boolean suppressSelectionLog = false;
-
-    // -------------------------------------------------------------------------
-    // Constructor
-    // -------------------------------------------------------------------------
 
     /**
-     * Constructs and displays the ShopGUI window.
-     * Builds all panels and initialises the GUI components.
+     * Second extra input field, used for subclass-specific attributes:
+     * tyre season, battery capacity (Ah), or compatible car model, depending
+     * on the item type selected in {@link #typeBox}.
+     */
+    private final JTextField extra2Field = new JTextField(12);
+
+    // --- Operation controls -------------------------------------------------
+
+    /**
+     * Text field for entering the number of units to add or sell during
+     * a stock operation. Cleared automatically after each successful operation.
+     */
+    private final JTextField amountField   = new JTextField(5);
+
+    /**
+     * Text field for entering the new price per unit (excluding VAT) when
+     * changing an item's price. Cleared automatically after each successful
+     * operation.
+     */
+    private final JTextField newPriceField = new JTextField(7);
+
+    // --- State flag ---------------------------------------------------------
+
+    /**
+     * Guard flag used to prevent the {@link javax.swing.event.ListSelectionListener}
+     * from firing a duplicate log entry when {@link DefaultListModel#set(int, Object)}
+     * is called internally by {@link #refreshSelected()}.
+     *
+     * <p>Set to {@code true} immediately before calling {@code model.set()},
+     * and reset to {@code false} immediately afterwards.</p>
+     */
+    private boolean suppressSelectionLog = false;
+
+
+    // -----------------------------------------------------------------------
+    // Constructor
+    // -----------------------------------------------------------------------
+
+    /**
+     * Constructs and displays the {@code ShopGUI} application window.
+     *
+     * <p>Initialises the {@link JFrame}, builds and arranges all sub-panels
+     * using {@link BorderLayout}, configures the output text area, and makes
+     * the window visible on screen. The window is centred relative to the
+     * screen and enforces a minimum size equal to its packed preferred size.</p>
      */
     public ShopGUI() {
         super("Accessories Shop - Stock Manager");
@@ -77,21 +161,36 @@ public class ShopGUI extends JFrame {
         updateExtraHints();
     }
 
-    // -------------------------------------------------------------------------
-    // Panel builders
-    // -------------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
+    // Panel Builders
+    // -----------------------------------------------------------------------
 
     /**
-     * Builds the left panel containing the stock list and control buttons.
+     * Builds and returns the left panel of the application window.
      *
-     * @return configured JPanel for the left side
+     * <p>The left panel contains:</p>
+     * <ul>
+     *   <li>A scrollable {@link JList} displaying all stock items with a custom
+     *       cell renderer that shows the stock code, name, quantity, and price
+     *       on a single line per item.</li>
+     *   <li>A "Show Details" button that prints full item details to the output
+     *       panel for the currently selected item.</li>
+     *   <li>A "Clear Output" button that empties the output text area.</li>
+     * </ul>
+     *
+     * <p>A {@link javax.swing.event.ListSelectionListener} is attached to the
+     * list so that selecting an item automatically logs its details, unless
+     * {@link #suppressSelectionLog} is {@code true}.</p>
+     *
+     * @return a fully configured {@link JPanel} for the left side of the window
      */
     private JPanel buildLeftPanel() {
         JPanel p = new JPanel(new BorderLayout(8, 8));
         p.setBorder(BorderFactory.createTitledBorder("Stock List"));
         p.setPreferredSize(new Dimension(340, 400));
 
-        // Custom cell renderer: one clean line per item
+        // Custom cell renderer: displays one clean, informative line per item
         list.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(
@@ -119,7 +218,7 @@ public class ShopGUI extends JFrame {
 
         p.add(new JScrollPane(list), BorderLayout.CENTER);
 
-        // Button row at bottom of the list panel
+        // Button row pinned to the bottom of the stock list panel
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
 
         JButton showBtn = new JButton("Show Details");
@@ -139,9 +238,17 @@ public class ShopGUI extends JFrame {
     }
 
     /**
-     * Builds the right panel containing create item form, operations, and output area.
+     * Builds and returns the right panel of the application window.
      *
-     * @return configured JPanel for the right side
+     * <p>The right panel is arranged vertically using {@link BoxLayout} and
+     * contains three sub-sections stacked from top to bottom:</p>
+     * <ol>
+     *   <li>The "Create Item" form panel (see {@link #buildCreatePanel()})</li>
+     *   <li>The "Operations" panel (see {@link #buildOpsPanel()})</li>
+     *   <li>The scrollable output text area where all log messages are shown</li>
+     * </ol>
+     *
+     * @return a fully configured {@link JPanel} for the right side of the window
      */
     private JPanel buildRightPanel() {
         JPanel p = new JPanel();
@@ -161,9 +268,19 @@ public class ShopGUI extends JFrame {
     }
 
     /**
-     * Builds the "Create Item" panel with fields for all item types.
+     * Builds and returns the "Create Item" form panel.
      *
-     * @return configured JPanel for item creation
+     * <p>This panel uses a {@link GridBagLayout} to present labelled input
+     * fields for creating a new stock item of any supported type. Fields
+     * include stock code, initial quantity, price (excluding VAT), and two
+     * optional "Extra" fields whose purpose changes dynamically based on
+     * the type selected in {@link #typeBox} (managed by
+     * {@link #updateExtraHints()}).</p>
+     *
+     * <p>Clicking "Create and Add" invokes {@link #createItem()}, which
+     * validates all inputs and adds the new item to the stock list.</p>
+     *
+     * @return a fully configured {@link JPanel} for item creation
      */
     private JPanel buildCreatePanel() {
         JPanel p = new JPanel(new GridBagLayout());
@@ -209,9 +326,22 @@ public class ShopGUI extends JFrame {
     }
 
     /**
-     * Builds the "Operations" panel for add stock, sell stock, and change price.
+     * Builds and returns the "Operations" panel.
      *
-     * @return configured JPanel for stock operations
+     * <p>This panel provides the following actions, each of which operates on
+     * the item currently selected in the stock list:</p>
+     * <ul>
+     *   <li><b>Add Stock</b> — increases stock by the amount entered in
+     *       {@link #amountField} (calls {@link #doAdd()})</li>
+     *   <li><b>Sell Stock</b> — decreases stock by the amount entered in
+     *       {@link #amountField} (calls {@link #doSell()})</li>
+     *   <li><b>Change Price</b> — updates the price (excluding VAT) to the
+     *       value entered in {@link #newPriceField} (calls {@link #doPrice()})</li>
+     *   <li><b>Refresh Details</b> — re-logs the selected item's current
+     *       details without making any changes (calls {@link #refreshSelected()})</li>
+     * </ul>
+     *
+     * @return a fully configured {@link JPanel} for stock operations
      */
     private JPanel buildOpsPanel() {
         JPanel p = new JPanel(new GridBagLayout());
@@ -249,15 +379,29 @@ public class ShopGUI extends JFrame {
         return p;
     }
 
-    // -------------------------------------------------------------------------
-    // Tooltip / enable hints for extra fields based on selected type
-    // -------------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
+    // Extra Field Hint Management
+    // -----------------------------------------------------------------------
 
     /**
-     * Updates the extra field labels and enabled state based on the selected item type.
-     * Tyre uses size and season; CarBattery uses voltage and capacityAh;
-     * OilFilter uses filter type and compatible model.
-     * StockItem and NavSys do not use extra fields.
+     * Updates the tooltip text and enabled state of {@link #extra1Field} and
+     * {@link #extra2Field} based on the item type currently selected in
+     * {@link #typeBox}.
+     *
+     * <p>This method is called whenever the type selection changes, ensuring
+     * the user always sees contextually correct guidance for what to enter:</p>
+     * <ul>
+     *   <li><b>Tyre</b>       — Extra 1: tyre size (e.g. {@code "205/55R16"});
+     *                           Extra 2: season (e.g. {@code "All-season"})</li>
+     *   <li><b>CarBattery</b> — Extra 1: voltage in volts (e.g. {@code "12"});
+     *                           Extra 2: capacity in amp-hours (e.g. {@code "60"})</li>
+     *   <li><b>OilFilter</b>  — Extra 1: filter type (e.g. {@code "Spin-on"});
+     *                           Extra 2: compatible car model
+     *                           (e.g. {@code "Ford Fiesta 1.0 EcoBoost"})</li>
+     *   <li><b>StockItem / NavSys</b> — Both fields are disabled and labelled
+     *                           as not required.</li>
+     * </ul>
      */
     private void updateExtraHints() {
         String type = (String) typeBox.getSelectedItem();
@@ -283,7 +427,7 @@ public class ShopGUI extends JFrame {
                 extra2Field.setEnabled(true);
             }
             default -> {
-                // StockItem and NavSys do not use extra fields
+                // StockItem and NavSys do not use the extra fields
                 extra1Field.setToolTipText("Not used for this type");
                 extra2Field.setToolTipText("Not used for this type");
                 extra1Field.setEnabled(false);
@@ -292,14 +436,30 @@ public class ShopGUI extends JFrame {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Create item
-    // -------------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
+    // Item Creation
+    // -----------------------------------------------------------------------
 
     /**
-     * Reads GUI fields, validates input, creates the appropriate StockItem subclass,
-     * adds it to the list model, and logs confirmation.
-     * Shows error dialogs for invalid input or duplicate stock codes.
+     * Reads and validates all GUI input fields, creates the appropriate
+     * {@link StockItem} subclass instance, adds it to the list model, and
+     * logs a confirmation message to the output panel.
+     *
+     * <p>Validation rules enforced before creation:</p>
+     * <ul>
+     *   <li>Stock code must not be blank.</li>
+     *   <li>Stock code must be unique — no duplicate codes are permitted.</li>
+     *   <li>Both extra fields must be non-empty for {@link Tyre} and
+     *       {@link OilFilter}.</li>
+     *   <li>Both extra fields must be non-empty and numeric for
+     *       {@link CarBattery}.</li>
+     *   <li>Quantity and price must be parseable as {@code int} and
+     *       {@code double} respectively.</li>
+     * </ul>
+     *
+     * <p>On success, {@link #clearCreateFields()} is called to reset the form
+     * for the next entry. On failure, an error dialog is shown to the user.</p>
      */
     private void createItem() {
         try {
@@ -308,7 +468,7 @@ public class ShopGUI extends JFrame {
             int    qty   = Integer.parseInt(qtyField.getText().trim());
             double price = Double.parseDouble(priceField.getText().trim());
 
-            // Validate: code must not be blank
+            // Validate: stock code must not be blank
             if (code.isEmpty()) {
                 JOptionPane.showMessageDialog(this,
                         "Stock code must not be blank.",
@@ -316,7 +476,7 @@ public class ShopGUI extends JFrame {
                 return;
             }
 
-            // Prevent duplicate stock codes
+            // Validate: prevent duplicate stock codes (case-insensitive)
             for (int i = 0; i < model.size(); i++) {
                 if (model.get(i).getStockCode().equalsIgnoreCase(code)) {
                     JOptionPane.showMessageDialog(this,
@@ -326,7 +486,7 @@ public class ShopGUI extends JFrame {
                 }
             }
 
-            // Validate extra fields are not blank for types that need them
+            // Validate: Tyre and OilFilter both require both extra fields
             if ("Tyre".equals(type) || "OilFilter".equals(type)) {
                 if (extra1Field.getText().trim().isEmpty()
                         || extra2Field.getText().trim().isEmpty()) {
@@ -336,6 +496,8 @@ public class ShopGUI extends JFrame {
                     return;
                 }
             }
+
+            // Validate: CarBattery requires both extra fields as numeric values
             if ("CarBattery".equals(type)) {
                 if (extra1Field.getText().trim().isEmpty()
                         || extra2Field.getText().trim().isEmpty()) {
@@ -346,22 +508,23 @@ public class ShopGUI extends JFrame {
                 }
             }
 
+            // Instantiate the correct subclass based on the selected type
             StockItem item;
 
             switch (type) {
-                case "NavSys"  -> item = new NavSys(code, qty, price);
-                case "Tyre"    -> item = new Tyre(code, qty, price,
-                                                   extra1Field.getText().trim(),
-                                                   extra2Field.getText().trim());
+                case "NavSys"     -> item = new NavSys(code, qty, price);
+                case "Tyre"       -> item = new Tyre(code, qty, price,
+                                                     extra1Field.getText().trim(),
+                                                     extra2Field.getText().trim());
                 case "CarBattery" -> {
                     int v  = Integer.parseInt(extra1Field.getText().trim());
                     int ah = Integer.parseInt(extra2Field.getText().trim());
                     item = new CarBattery(code, qty, price, v, ah);
                 }
-                case "OilFilter" -> item = new OilFilter(code, qty, price,
+                case "OilFilter"  -> item = new OilFilter(code, qty, price,
                                                           extra1Field.getText().trim(),
                                                           extra2Field.getText().trim());
-                default -> item = new StockItem(code, qty, price);
+                default           -> item = new StockItem(code, qty, price);
             }
 
             model.addElement(item);
@@ -380,7 +543,11 @@ public class ShopGUI extends JFrame {
     }
 
     /**
-     * Clears all fields in the Create Item panel and resets the type dropdown.
+     * Clears all input fields in the "Create Item" panel and resets
+     * {@link #typeBox} to its first option ({@code "StockItem"}).
+     *
+     * <p>Called automatically by {@link #createItem()} after a successful
+     * item creation, so the form is immediately ready for the next entry.</p>
      */
     private void clearCreateFields() {
         codeField.setText("");
@@ -392,15 +559,22 @@ public class ShopGUI extends JFrame {
         updateExtraHints();
     }
 
-    // -------------------------------------------------------------------------
-    // Operations
-    // -------------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
+    // Stock Operations
+    // -----------------------------------------------------------------------
 
     /**
-     * Returns the currently selected StockItem from the list.
-     * Shows a message dialog if nothing is selected.
+     * Returns the {@link StockItem} currently selected in the stock list,
+     * or {@code null} if no item is selected.
      *
-     * @return selected StockItem, or null if none selected
+     * <p>If nothing is selected, a user-friendly message dialog is shown
+     * prompting the user to select an item first. All operation methods
+     * ({@link #doAdd()}, {@link #doSell()}, {@link #doPrice()}) call this
+     * method and return immediately if the result is {@code null}.</p>
+     *
+     * @return the currently selected {@link StockItem}, or {@code null} if
+     *         the selection is empty
      */
     private StockItem getSelected() {
         StockItem s = list.getSelectedValue();
@@ -412,9 +586,19 @@ public class ShopGUI extends JFrame {
     }
 
     /**
-     * Handles the Add Stock button.
-     * Validates amount in the GUI first, then calls addStock().
-     * Error conditions are logged to the GUI output panel — not just System.out.
+     * Handles the "Add Stock" button action.
+     *
+     * <p>Reads the integer value from {@link #amountField} and validates it
+     * against the same rules enforced by {@link StockItem#addStock(int)},
+     * surfacing any errors in the GUI output panel rather than only on the
+     * console. If validation passes, {@link StockItem#addStock(int)} is called
+     * and {@link #refreshSelected()} updates the display.</p>
+     *
+     * <p>Validation rules checked:</p>
+     * <ul>
+     *   <li>Amount must be &ge; 1.</li>
+     *   <li>Resulting stock level must not exceed {@link StockItem#MAX_STOCK}.</li>
+     * </ul>
      */
     private void doAdd() {
         StockItem s = getSelected();
@@ -423,7 +607,7 @@ public class ShopGUI extends JFrame {
         try {
             int amount = Integer.parseInt(amountField.getText().trim());
 
-            // Mirror StockItem validation here so errors appear in the GUI
+            // Mirror StockItem validation so errors appear in the GUI output panel
             if (amount < 1) {
                 log("Error: Amount to add must be greater than or equal to one.\n\n");
                 return;
@@ -445,9 +629,20 @@ public class ShopGUI extends JFrame {
     }
 
     /**
-     * Handles the Sell Stock button.
-     * Returns early on failure so "Updated item" is never shown after a failed sell.
-     * Error conditions are logged to the GUI output panel.
+     * Handles the "Sell Stock" button action.
+     *
+     * <p>Reads the integer value from {@link #amountField} and validates it
+     * against the same rules enforced by {@link StockItem#sellStock(int)},
+     * surfacing any errors in the GUI output panel. Returns early on any
+     * failure so the "Updated item" confirmation message is never displayed
+     * after an unsuccessful sell operation.</p>
+     *
+     * <p>Validation rules checked:</p>
+     * <ul>
+     *   <li>Amount must be &ge; 1.</li>
+     *   <li>Amount must not exceed the current stock level.</li>
+     *   <li>{@link StockItem#sellStock(int)} must return {@code true}.</li>
+     * </ul>
      */
     private void doSell() {
         StockItem s = getSelected();
@@ -456,7 +651,7 @@ public class ShopGUI extends JFrame {
         try {
             int amount = Integer.parseInt(amountField.getText().trim());
 
-            // Mirror StockItem validation here so errors appear in the GUI
+            // Mirror StockItem validation so errors appear in the GUI output panel
             if (amount < 1) {
                 log("Error: Amount to sell must be greater than or equal to one.\n\n");
                 return;
@@ -482,9 +677,20 @@ public class ShopGUI extends JFrame {
     }
 
     /**
-     * Handles the Change Price button.
-     * Validates price is non-negative, calls setPriceWithoutVAT(), then refreshes.
-     * All error messages go to the GUI output panel.
+     * Handles the "Change Price" button action.
+     *
+     * <p>Reads the {@code double} value from {@link #newPriceField}, validates
+     * that it is non-negative, then calls
+     * {@link StockItem#setPriceWithoutVAT(double)} on the selected item.
+     * Floating-point {@code ==} comparison is deliberately avoided to prevent
+     * unreliable equality checks. All error messages are logged to the GUI
+     * output panel.</p>
+     *
+     * <p>Validation rules checked:</p>
+     * <ul>
+     *   <li>New price must be a valid {@code double}.</li>
+     *   <li>New price must be &ge; 0.</li>
+     * </ul>
      */
     private void doPrice() {
         StockItem s = getSelected();
@@ -510,9 +716,15 @@ public class ShopGUI extends JFrame {
     }
 
     /**
-     * Refreshes the selected item in the JList and logs its updated details.
-     * Uses suppressSelectionLog to prevent the ListSelectionListener
-     * from firing a duplicate log entry when model.set() is called.
+     * Refreshes the currently selected item in the {@link JList} and logs
+     * its updated details to the output panel.
+     *
+     * <p>Calls {@link DefaultListModel#set(int, Object)} to notify the list
+     * that the item's displayed data has changed (e.g. after a stock or price
+     * update). {@link #suppressSelectionLog} is set to {@code true} before
+     * this call and {@code false} immediately afterwards to prevent the
+     * attached {@link javax.swing.event.ListSelectionListener} from firing a
+     * duplicate log entry.</p>
      */
     private void refreshSelected() {
         int idx = list.getSelectedIndex();
@@ -527,29 +739,36 @@ public class ShopGUI extends JFrame {
         log("Updated item:\n" + s + "\n\n");
     }
 
-    // -------------------------------------------------------------------------
-    // Logging
-    // -------------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
+    // Output Logging
+    // -----------------------------------------------------------------------
 
     /**
-     * Appends a message to the output text area and scrolls to the bottom.
+     * Appends a message to the {@link #output} text area and automatically
+     * scrolls the view to the bottom so the most recent entry is always visible.
      *
-     * @param msg message to display
+     * @param msg the message string to append; may contain newline characters
      */
     private void log(String msg) {
         output.append(msg);
         output.setCaretPosition(output.getDocument().getLength());
     }
 
-    // -------------------------------------------------------------------------
-    // Entry point
-    // -------------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
+    // Application Entry Point
+    // -----------------------------------------------------------------------
 
     /**
-     * Application entry point.
-     * Launches the GUI on the Event Dispatch Thread.
+     * Application entry point for the stock management GUI.
      *
-     * @param args command line arguments (not used)
+     * <p>Constructs the {@link ShopGUI} window on the
+     * <em>Event Dispatch Thread</em> (EDT) using
+     * {@link SwingUtilities#invokeLater(Runnable)}, which is the correct and
+     * thread-safe way to initialise Swing components in Java.</p>
+     *
+     * @param args command-line arguments; not used by this application
      */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(ShopGUI::new);
