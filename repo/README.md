@@ -1,164 +1,314 @@
-# Accessories Shop Stock Management System
+# Accessories Shop — Stock Management System
 
 **Module:** UFCFC3-30-1 Introduction to Object-Oriented Systems Development  
-**Assessment:** Project Portfolio (50% of total module mark)  
-**Package:** `Assignment`  
-**IDE:** NetBeans (OOSD1 project)
+**Assessment:** Portfolio Project — 50% of total module mark  
+**Author:** Nadira Robleh  
+**Package:** `Assignment`
 
 ---
 
-## Overview
+## Project Overview
 
-A Java-based stock management system for a car parts and accessories shop, built across three development steps. The system demonstrates core object-oriented principles — **encapsulation**, **inheritance**, **method overriding**, **polymorphism**, and **dynamic method binding** — and includes a fully functional Swing GUI.
+This project is a Java object-oriented application for a car parts and accessories shop. It allows shop staff to manage stock items including Navigation Systems, Tyres, Car Batteries, and Oil Filters through both a console interface and a fully interactive Swing GUI.
+
+The system is built across three steps as required by the assessment brief:
+
+- **Step 1** — Design and implement the `StockItem` base class
+- **Step 2** — Design and implement the `NavSys` subclass demonstrating inheritance
+- **Step 3** — Design and implement three more subclasses (`Tyre`, `CarBattery`, `OilFilter`), demonstrate polymorphism and dynamic method binding, and deliver a GUI-based application
+
+---
+
+## Object-Oriented Concepts Demonstrated
+
+| Concept | How it appears in this project |
+|---|---|
+| **Encapsulation** | All instance variables are `private`; access is through getters and setters only |
+| **Inheritance** | `NavSys`, `Tyre`, `CarBattery`, and `OilFilter` all extend `StockItem` using `extends` |
+| **Method overriding** | Every subclass overrides `getStockName()`, `getStockDescription()`, and `toString()` |
+| **`super` keyword** | Subclass constructors call `super(stockCode, quantity, price)`; `toString()` calls `super.toString()` |
+| **Polymorphism** | A `StockItem[]` array in `TestPolymorphism` holds instances of all four different subclasses |
+| **Dynamic method binding** | The JVM resolves the correct subclass override of `toString()` at runtime, not at compile time |
+| **Constants** | `MAX_STOCK = 100` and `STANDARD_VAT_PERCENT = 17.5` are `public static final` fields on `StockItem` |
+| **Defensive validation** | `null` strings are replaced with `""` and trimmed; invalid constructor arguments throw `IllegalArgumentException` |
 
 ---
 
 ## Project Structure
 
 ```
-Assignment_UFCFC3-30-1/
-│
-├── src/
-│   └── Assignment/
-│       ├── StockItem.java            # Step 1 — Base class
-│       ├── NavSys.java               # Step 2 — Navigation system subclass
-│       ├── Tyre.java                 # Step 3 — Invented subclass
-│       ├── CarBattery.java           # Step 3 — Invented subclass
-│       ├── OilFilter.java            # Step 3 — Invented subclass
-│       ├── TestStockItem.java        # Step 1 — Test class
-│       ├── TestNavSys.java           # Step 2 — Test class
-│       ├── TestPolymorphism.java     # Step 3 — Polymorphism demo
-│       └── ShopGUI.java              # GUI application (main entry point)
-│
-├── docs/
-│   ├── UML/
-│   │   ├── class_diagrams/
-│   │   │   ├── Step1_StockItem_UML.png
-│   │   │   ├── Step2_NavSys_UML.png
-│   │   │   ├── Step3_All_Subclasses_UML.png
-│   │   │   ├── ShopGUI_Optional_UML.png
-│   │   │   ├── Full_Assignment_UML.png
-│   │   │   └── UML_Diagrahm.png
-│   │   └── sequence_diagrams/
-│   │       ├── sequence_create_stock_item.png
-│   │       ├── sequence_stock_operations.png
-│   │       ├── sequence_navsys_testing.png
-│   │       ├── sequence_polymorphism.png
-│   │       └── sequence_dynamic_binding.png
-│   └── test_cases/
-│       └── OOSD1_UML_and_Test_Cases.pdf
-│
-├── .gitignore
-└── README.md
+Assignment/
+├── StockItem.java            Base class (Step 1)
+├── NavSys.java               Navigation system subclass (Step 2)
+├── Tyre.java                 Tyre subclass (Step 3)
+├── CarBattery.java           Car battery subclass (Step 3)
+├── OilFilter.java            Oil filter subclass (Step 3)
+├── ShopGUI.java              Swing GUI application (Step 3)
+├── TestStockItem.java        Console test for Step 1
+├── TestNavSys.java           Console test for Step 2
+└── TestPolymorphism.java     Polymorphism demonstration for Step 3
 ```
 
 ---
 
-## Class Descriptions
+## Class Hierarchy
 
-### `StockItem` — Step 1 (Base Class)
+```
+StockItem
+├── NavSys
+├── Tyre
+├── CarBattery
+└── OilFilter
+```
 
-Represents any generic stock item sold by the shop.
+`StockItem` is the root of the hierarchy. It defines all shared state and behaviour. Every subclass inherits stock code, quantity, price, VAT calculation, `addStock()`, and `sellStock()` from `StockItem`, and overrides the name, description, and `toString()` methods to provide product-specific output.
 
-| Member | Type | Description |
+---
+
+## Class Reference
+
+### `StockItem`
+
+The base class representing any item stocked by the shop.
+
+**Instance variables**
+
+| Variable | Type | Description |
 |---|---|---|
-| `MAX_STOCK` | `public static final int` | Maximum allowed stock (100) |
-| `STANDARD_VAT_PERCENT` | `public static final double` | Standard VAT rate (17.5) |
-| `stockCode` | `private final String` | Fixed stock code |
-| `quantityInStock` | `private int` | Current stock level |
-| `priceWithoutVAT` | `private double` | Price per unit before VAT |
-| `StockItem(code, qty, price)` | Constructor | Creates item; validates all inputs |
-| `getStockName()` | Method | Returns `"Unknown Stock Name"` |
-| `getStockDescription()` | Method | Returns `"Unknown Stock Description"` |
-| `addStock(amount)` | Method | Increases stock; prints error if `< 1` or `> MAX_STOCK` |
-| `sellStock(amount)` | Method | Reduces stock; returns `true`/`false` |
-| `getVAT()` | Method | Returns `STANDARD_VAT_PERCENT` |
-| `getPriceWithVAT()` | Method | Returns price including VAT |
-| `toString()` | Method | Returns formatted item details |
+| `stockCode` | `String` (final) | Fixed unique identifier — cannot change after construction |
+| `quantityInStock` | `int` | Current number of units in stock |
+| `priceWithoutVAT` | `double` | Price per unit before VAT is applied |
 
-### `NavSys` — Step 2 (Subclass of StockItem)
+**Constants**
 
-Represents a GeoVision Sat Nav navigation system.
+| Constant | Value | Description |
+|---|---|---|
+| `MAX_STOCK` | `100` | Maximum units allowed in stock at any time |
+| `STANDARD_VAT_PERCENT` | `17.5` | VAT rate used for all price calculations |
 
-- Constructor calls `super(stockCode, quantity, price)`
-- Overrides `getStockName()` → `"Navigation system"`
-- Overrides `getStockDescription()` → `" GeoVision Sat Nav"`
-- Overrides `toString()` using `super.toString()`
+**Key methods**
 
-### `Tyre` — Step 3 (Invented Subclass)
+| Method | Returns | Description |
+|---|---|---|
+| `getStockName()` | `"Unknown Stock Name"` | Overridden by all subclasses |
+| `getStockDescription()` | `"Unknown Stock Description"` | Overridden by all subclasses |
+| `addStock(int amount)` | `boolean` | Increases stock; returns `false` and prints error if `amount < 1` or total exceeds `MAX_STOCK` |
+| `sellStock(int amount)` | `boolean` | Reduces stock and returns `true` if successful; returns `false` if `amount < 1` or exceeds current stock |
+| `getPriceWithVAT()` | `double` | Calculates `priceWithoutVAT × (1 + 17.5 / 100)` |
+| `getVAT()` | `double` | Returns `17.5` |
+| `toString()` | `String` | Returns a 6-line formatted summary using all the methods above |
 
-Represents a tyre. Extra fields: `size` (e.g. `205/55R16`), `season` (e.g. `All-season`).
+---
 
-### `CarBattery` — Step 3 (Invented Subclass)
+### `NavSys` — Navigation System
 
-Represents a car battery. Extra fields: `voltage` (e.g. `12`), `capacityAh` (e.g. `60`).
+Extends `StockItem`. No additional instance variables.
 
-### `OilFilter` — Step 3 (Invented Subclass)
+| Method | Returns |
+|---|---|
+| `getStockName()` | `"Navigation system"` |
+| `getStockDescription()` | `" GeoVision Sat Nav"` |
+| `toString()` | Delegates entirely to `super.toString()` |
 
-Represents an oil filter. Extra fields: `filterType` (e.g. `Spin-on`), `compatibleModel` (e.g. `Ford Fiesta 1.0 EcoBoost`).
+---
+
+### `Tyre`
+
+Extends `StockItem`. Adds `size` (String) and `season` (String).
+
+| Extra variable | Example value |
+|---|---|
+| `size` | `"205/55R16"` |
+| `season` | `"All-season"` |
+
+`getStockDescription()` returns e.g. `"Tyre 205/55R16 (All-season)"`  
+`toString()` appends `Tyre Size` and `Season` fields after `super.toString()`
+
+---
+
+### `CarBattery`
+
+Extends `StockItem`. Adds `voltage` (int) and `capacityAh` (int).
+
+| Extra variable | Example value |
+|---|---|
+| `voltage` | `12` |
+| `capacityAh` | `60` |
+
+`getStockDescription()` returns e.g. `"12V 60Ah Battery"`  
+`toString()` appends `Voltage` and `Capacity` fields after `super.toString()`
+
+---
+
+### `OilFilter`
+
+Extends `StockItem`. Adds `filterType` (String) and `compatibleModel` (String).
+
+| Extra variable | Example value |
+|---|---|
+| `filterType` | `"Spin-on"` |
+| `compatibleModel` | `"Ford Fiesta 1.0 EcoBoost"` |
+
+`getStockDescription()` returns e.g. `"Spin-on filter for Ford Fiesta 1.0 EcoBoost"`  
+`toString()` appends `Filter Type` and `Compatible Model` fields after `super.toString()`
+
+---
+
+## Prerequisites
+
+| Requirement | Version |
+|---|---|
+| Java Development Kit (JDK) | 17 or later |
+| IDE (optional) | IntelliJ IDEA, Eclipse, VS Code with Java extension |
+
+No external libraries or build tools are required. The only dependencies are the Java standard library (`javax.swing`, `java.awt`, `java.util.Scanner`).
 
 ---
 
 ## Setup Instructions
 
-### Prerequisites
-
-- Java JDK 17 or later
-- NetBeans IDE (recommended) or any Java IDE
-
-### Running in NetBeans
-
-1. Clone or download this repository
-2. Open **NetBeans** → File → Open Project → select `OOSD1`
-3. Ensure all `.java` files are in the `Assignment` package under `Source Packages`
-4. Right-click `ShopGUI.java` → **Run File** to launch the GUI
-5. Right-click `TestStockItem.java`, `TestNavSys.java`, or `TestPolymorphism.java` → **Run File** to run the console test classes
-
-### Running from Terminal
+### 1. Clone the repository
 
 ```bash
-# Compile all files
-javac -d out src/Assignment/*.java
-
-# Run the GUI
-java -cp out Assignment.ShopGUI
-
-# Run test classes
-java -cp out Assignment.TestStockItem
-java -cp out Assignment.TestNavSys
-java -cp out Assignment.TestPolymorphism
+git clone https://github.com/your-username/your-repo-name.git
+cd your-repo-name
 ```
+
+### 2. Compile all source files
+
+Run this command from the root of the repository — the folder that **contains** the `Assignment/` directory:
+
+```bash
+javac Assignment/*.java
+```
+
+This compiles all nine `.java` files in one step. No errors should appear.
 
 ---
 
-## GUI Usage Guide
+## Running the Application
 
-### Creating a Stock Item
-1. Select item **Type** from the dropdown (StockItem, NavSys, Tyre, CarBattery, OilFilter)
-2. Enter **Code**, **Quantity**, and **Price (no VAT)**
-3. For Tyre, CarBattery, OilFilter — fill in **Extra 1** and **Extra 2** fields
-4. Click **Create & Add** — the item appears in the stock list
+### Launch the GUI
 
-### Stock Operations
-1. Click an item in the **Stock List** to select it
-2. **Add Stock:** Enter amount → click **Add Stock**
-3. **Sell Stock:** Enter amount → click **Sell Stock**
-4. **Change Price:** Enter new price → click **Change Price**
-5. **Show Details:** Click **Show Details** to display full item information
+```bash
+java Assignment.ShopGUI
+```
 
-### Error Handling
-- Blank stock codes → error dialog
-- Duplicate stock codes → error dialog
-- Amount less than 1 → error message in output panel
-- Stock exceeding MAX_STOCK (100) → error message in output panel
-- Negative price → error message in output panel
-- Missing extra fields for subclasses → error dialog
+This opens the graphical stock management window. This is the recommended way to interact with the system and is the primary deliverable for Step 3.
+
+---
+
+## Running the Test Classes
+
+Each of the three test classes has its own `main` method and runs independently from the command line.
+
+### Step 1 — StockItem test
+
+```bash
+java Assignment.TestStockItem
+```
+
+This runs through all tasks from the Step 1 sample run in the brief:
+
+- Task 1: Creates a `StockItem` with code `W101`, quantity `10`, price `99.99` and prints details
+- Task 2: Adds `10` units — quantity becomes `20`
+- Task 3: Sells `2` units — quantity becomes `18`
+- Task 4: Changes price to `100.99` — VAT price recalculates automatically
+- Error tests: `addStock(0)`, `sellStock(0)`, `setPriceWithoutVAT(-5.00)`, `addStock(100)` all print the required error messages
+
+---
+
+### Step 2 — NavSys test
+
+```bash
+java Assignment.TestNavSys
+```
+
+This runs through all tasks from the Step 2 sample run in the brief:
+
+- Task 1: Creates `NavSys` with code `NS101`, quantity `10`, price `99.99`
+- Task 2: Adds `10` units
+- Task 3: Sells `2` units
+- Task 4: Changes price to `100.99`
+- Task 5: Calls `addStock(0)` — prints the required error message
+
+---
+
+### Step 3 — Polymorphism demo
+
+```bash
+java Assignment.TestPolymorphism
+```
+
+This test is **interactive**. It creates one instance of each subclass, stores all four in a `StockItem[]` array, and calls `itemInstance(StockItem s)` on each in a loop. For each item you will be prompted to enter:
+
+1. Number of units to add
+2. Number of units to sell
+3. New price (excluding VAT)
+
+The correct `toString()` output for each subclass is produced through dynamic method binding — the JVM selects the right override at runtime based on the actual object type, not the `StockItem` reference type.
+
+**Suggested inputs to match the brief sample run:**
+
+| Item | Code | Add | Sell | New Price |
+|---|---|---|---|---|
+| NavSys | NS101 | 10 | 2 | 100.99 |
+| Tyre | T101 | 5 | 3 | 64.99 |
+| CarBattery | B101 | 10 | 1 | 94.99 |
+| OilFilter | OF101 | 20 | 5 | 10.99 |
+
+---
+
+## Usage Guide — GUI (ShopGUI)
+
+### Left panel — Stock List
+
+Displays every created item in a scrollable list. Each row shows:
+
+```
+[CODE] Item Name  |  Qty: N  |  £price
+```
+
+Click any item to select it. The full `toString()` output appears in the output panel immediately. Use **Show Details** to print it again at any time. Use **Clear Output** to reset the log.
+
+---
+
+### Right panel — Create Item
+
+| Field | What to enter |
+|---|---|
+| Type | Choose from the dropdown: `StockItem`, `NavSys`, `Tyre`, `CarBattery`, `OilFilter` |
+| Code | A unique stock code, e.g. `NS101`. Duplicate codes are rejected. |
+| Quantity | A whole number between `0` and `100` |
+| Price (no VAT) | A price per unit, e.g. `99.99`. Must be `0` or greater. |
+| Extra 1 | Tyre → tyre size e.g. `205/55R16` · CarBattery → voltage e.g. `12` · OilFilter → filter type e.g. `Spin-on` |
+| Extra 2 | Tyre → season e.g. `All-season` · CarBattery → capacity e.g. `60` · OilFilter → compatible model e.g. `Ford Fiesta 1.0 EcoBoost` |
+
+Extra fields are disabled and greyed out automatically when they are not needed (e.g. for `StockItem` and `NavSys`).
+
+Click **Create & Add** to create the item. The form clears automatically on success, ready for the next entry.
+
+---
+
+### Right panel — Operations
+
+Select an item from the list before using any of these buttons.
+
+| Button | Input required | What it does |
+|---|---|---|
+| **Add Stock** | Amount field | Increases stock by the entered number |
+| **Sell Stock** | Amount field | Decreases stock by the entered number |
+| **Change Price** | New Price field | Updates the ex-VAT price; the inc-VAT price recalculates automatically |
+| **Refresh Details** | None | Re-prints the selected item's current state in the output panel |
+
+All validation errors (invalid amounts, duplicate codes, negative prices, exceeding the stock cap) are shown in the output panel. Nothing fails silently.
 
 ---
 
 ## Sample Console Output
 
-### TestStockItem
+### TestStockItem (Step 1)
+
 ```
 Printing stock item information
 Stock Type: Unknown Stock Name
@@ -169,12 +319,12 @@ Price With VAT: 117.48825
 Total unit in stock: 10
 
 Printing stock item information
-...
+Stock Type: Unknown Stock Name
+Description: Unknown Stock Description
+Stock Code: W101
+Price Without VAT: 99.99
+Price With VAT: 117.48825
 Total unit in stock: 20
-
-Printing stock item information
-...
-Total unit in stock: 18
 
 The error was: Increased item must be greater than or equal to one
 The error was: Sell amount must be greater than or equal to one
@@ -182,7 +332,8 @@ The error was: Price must be greater than or equal to 0
 The error was: Stock cannot exceed 100
 ```
 
-### TestNavSys
+### TestNavSys (Step 2)
+
 ```
 Printing stock item information
 Stock Type: Navigation system
@@ -191,76 +342,45 @@ Stock Code: NS101
 Price Without VAT: 99.99
 Price With VAT: 117.48825
 Total unit in stock: 10
-...
-Price Without VAT: 100.99
-Price With VAT: 118.66324999999999
-Total unit in stock: 18
 
 The error was: Increased item must be greater than or equal to one
 ```
 
 ---
 
-## OO Concepts Demonstrated
+## Validation Rules
 
-| Concept | Implementation |
-|---|---|
-| **Encapsulation** | All fields are `private`; accessed only via public getters/setters |
-| **Inheritance** | `NavSys`, `Tyre`, `CarBattery`, `OilFilter` all `extend StockItem` |
-| **Method Overriding** | Each subclass overrides `getStockName()`, `getStockDescription()`, `toString()` |
-| **`super` keyword** | Subclass constructors call `super(stockCode, quantity, price)`; `toString()` calls `super.toString()` |
-| **Polymorphism** | `StockItem[] items` array holds all subclass instances in `TestPolymorphism` |
-| **Dynamic Method Binding** | `toString()` on a `StockItem` reference resolves to the correct subclass method at runtime |
-| **Constants** | `MAX_STOCK` and `STANDARD_VAT_PERCENT` as `public static final` |
+The following rules are enforced by `StockItem` and the GUI, as specified in the assessment brief.
 
----
-
-## UML Diagrams
-
-All UML diagrams are located in `docs/UML/`:
-
-### Class Diagrams (in `class_diagrams/`)
-- `Step1_StockItem_UML.png` — StockItem base class (Step 1)
-- `Step2_NavSys_UML.png` — NavSys added with inheritance arrow (Step 2)
-- `Step3_All_Subclasses_UML.png` — All four subclasses (Step 3)
-- `Full_Assignment_UML.png` — Complete system including ShopGUI and test classes
-
-### Sequence Diagrams (in `sequence_diagrams/`)
-- `sequence_create_stock_item.png` — GUI create item flow
-- `sequence_stock_operations.png` — Add/sell/change price via GUI
-- `sequence_navsys_testing.png` — TestNavSys execution flow
-- `sequence_polymorphism.png` — TestPolymorphism loop execution
-- `sequence_dynamic_binding.png` — Dynamic dispatch of getStockName()
-
----
-
-## Test Cases
-
-A full test strategy and **14 documented test cases** (satisfying the requirement of more than 10 and fewer than 15) are documented in:
-
-`docs/test_cases/OOSD1_UML_and_Test_Cases.pdf`
-
-Test coverage includes:
-
-| ID | Type | Feature |
+| Operation | Condition that is rejected | What happens |
 |---|---|---|
-| TC01 | Class Test | StockItem constructor — valid input |
-| TC02 | Class Test | Constructor validation — invalid input |
-| TC03 | Class Test | VAT calculation |
-| TC04 | Class Test | addStock() — normal case |
-| TC05 | Class Test | sellStock() — normal case |
-| TC06 | Class Test | Boundary conditions |
-| TC07 | Class Test | setQuantityInStock() — valid and invalid |
-| TC08 | Class Test | toString() — formatted output |
-| TC09 | Class Test | NavSys inheritance and overriding |
-| TC10 | Class Test | Invented subclasses (Tyre, CarBattery, OilFilter) |
-| TC11 | Class Test | Polymorphism and dynamic binding |
-| TC12 | GUI Test | Create item via GUI |
-| TC13 | GUI Test | Stock operations via GUI |
-| TC14 | GUI Test | GUI validation and error handling |
+| `addStock(n)` | `n < 1` | Error printed to console; stock unchanged; returns `false` |
+| `addStock(n)` | `current stock + n > 100` | Error printed to console; stock unchanged; returns `false` |
+| `sellStock(n)` | `n < 1` | Error printed to console; stock unchanged; returns `false` |
+| `sellStock(n)` | `n > current stock` | No error printed; stock unchanged; returns `false` |
+| `setPriceWithoutVAT(p)` | `p < 0` | Error printed to console; price unchanged |
+| Constructor | `stockCode` is null or blank | `IllegalArgumentException` thrown |
+| Constructor | `quantity < 0` or `quantity > 100` | `IllegalArgumentException` thrown |
+| Constructor | `price < 0` | `IllegalArgumentException` thrown |
+| GUI: Create | Duplicate stock code | Error dialog displayed; item not added |
+| GUI: Create | Extra fields blank for `Tyre`, `CarBattery`, or `OilFilter` | Error dialog displayed; item not created |
+
+---
+
+## Deliverables
+
+| Deliverable | Location |
+|---|---|
+| Java source code | `Assignment/` folder in this repository |
+| UML class diagrams (Steps 1, 2, and 3) | Submitted separately via Blackboard |
+| Test strategy and test case table (14 cases) | Submitted separately via Blackboard |
+| 5-minute video demonstration | Submitted separately via Blackboard |
 
 ---
 
 ## Author
 
-UWE Bristol — UFCFC3-30-1 Introduction to OO Systems Development, 2025–26
+**Nadira Robleh**  
+University of the West of England, Bristol  
+Module: UFCFC3-30-1 Introduction to Object-Oriented Systems Development  
+Academic Year: 2025–26
