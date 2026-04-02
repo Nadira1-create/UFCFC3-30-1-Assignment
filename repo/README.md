@@ -377,6 +377,9 @@ The following rules are enforced by `StockItem` and the GUI, as specified in the
 | 5-minute video demonstration | Submitted separately via Blackboard |
 
 ---
+## Demo Video
+Watch here: https://uwe.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id=5138bbc5-dab8-4a1b-9d2f-b42000cfee3e
+---
 
 ## Author
 
